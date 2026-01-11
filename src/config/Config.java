@@ -19,10 +19,19 @@ public class Config {
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_HOG = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_DUCK = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_MOUSE = new HashMap<>();
+    public static final Map<AnimalType, Map<AnimalType, Integer>> PROBABILITY_OF_EATING = Map.of(
+            AnimalType.WOLF, PROBABILITY_OF_EATING_BY_WOLF,
+            AnimalType.FOX, PROBABILITY_OF_EATING_BY_FOX,
+            AnimalType.EAGLE, PROBABILITY_OF_EATING_BY_EAGLE,
+            AnimalType.BOA, PROBABILITY_OF_EATING_BY_BOA,
+            AnimalType.BEAR, PROBABILITY_OF_EATING_BY_BEAR,
+            AnimalType.HOG, PROBABILITY_OF_EATING_BY_HOG,
+            AnimalType.DUCK, PROBABILITY_OF_EATING_BY_DUCK,
+            AnimalType.MOUSE, PROBABILITY_OF_EATING_BY_MOUSE);
 
 // 3. ХАРАКТЕРИСТИКИ ЖИВОТНЫХ
     public static final Map<AnimalType, Double> WEIGHT_OF_ANIMAL = new HashMap<>();
-    public static final Map<AnimalType, Integer> MAX_POPULATIN_ANIMAL_IN_THE_CELL = new HashMap<>();
+    public static final Map<AnimalType, Integer> MAX_POPULATION_ANIMAL_IN_THE_CELL = new HashMap<>();
     public static final Map<AnimalType, Integer> MOVEMENT_SPEED_ANIMALS = new HashMap<>();
     public static final Map<AnimalType, Double> AMOUNT_OF_FOOD_NEEDED_FOR_FULL_SATURATION = new HashMap<>();
     public static final Map<AnimalType, Integer> MAX_AGE_ANIMALS = new HashMap<>();
@@ -32,7 +41,11 @@ public class Config {
     public static final int AGE = 0;
     public static final boolean IS_ALIVE = true;
 
-// 4. МИНИМУМ ТРАВОЯДНЫХ, МИНИМУМ ХИЩНИКОВ
+// 4. ХАРАКТЕРИСТИКИ РАСТЕНИЙ
+    public static final int WEIGHT_OF_PLANT = 1;
+    public static final int MAX_NUMBER_OF_PLANTS_IN_THE_CELL = 200;
+
+// 5. МИНИМУМ ТРАВОЯДНЫХ, МИНИМУМ ХИЩНИКОВ
     public static final int MIN_PREDATORS_TYPE = 5;
     public static final int MIN_HERBIVORE_TYPE = 10;
 
@@ -42,7 +55,7 @@ public class Config {
         }
 
         for(AnimalType type : AnimalType.values()){
-            MAX_POPULATIN_ANIMAL_IN_THE_CELL.put(type, type.getMaxPopulation());
+            MAX_POPULATION_ANIMAL_IN_THE_CELL.put(type, type.getMaxPopulation());
         }
 
         for(AnimalType type : AnimalType.values()){
