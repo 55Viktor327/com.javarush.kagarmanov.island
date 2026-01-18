@@ -1,6 +1,6 @@
 package tasks;
 
-import enums.AnimalType;
+import entities.enums.AnimalType;
 import island.Island;
 
 import java.util.Map;

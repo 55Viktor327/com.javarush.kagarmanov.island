@@ -1,10 +1,9 @@
 package config;
 
-import enums.AnimalType;
+import entities.enums.AnimalType;
 
 import java.util.HashMap;
 import java.util.Map;
-import java.util.concurrent.ScheduledExecutorService;
 
 public class Config {
 // 1. РАЗМЕР ОСТРОВА
@@ -16,7 +15,7 @@ public class Config {
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_EAGLE = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_BOA = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_BEAR = new HashMap<>();
-    public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_HOG = new HashMap<>();
+    public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_BOAR = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_DUCK = new HashMap<>();
     public static final Map<AnimalType, Integer> PROBABILITY_OF_EATING_BY_MOUSE = new HashMap<>();
     public static final Map<AnimalType, Map<AnimalType, Integer>> PROBABILITY_OF_EATING = Map.of(
@@ -25,33 +24,30 @@ public class Config {
             AnimalType.EAGLE, PROBABILITY_OF_EATING_BY_EAGLE,
             AnimalType.BOA, PROBABILITY_OF_EATING_BY_BOA,
             AnimalType.BEAR, PROBABILITY_OF_EATING_BY_BEAR,
-            AnimalType.HOG, PROBABILITY_OF_EATING_BY_HOG,
+            AnimalType.BOAR, PROBABILITY_OF_EATING_BY_BOAR,
             AnimalType.DUCK, PROBABILITY_OF_EATING_BY_DUCK,
             AnimalType.MOUSE, PROBABILITY_OF_EATING_BY_MOUSE);
 
 // 3. ХАРАКТЕРИСТИКИ ЖИВОТНЫХ
-    public static final Map<AnimalType, Double> WEIGHT_OF_ANIMAL = new HashMap<>();
+    public static final Map<AnimalType, Double> WEIGHT_OF_ANIMAL_IN_KG = new HashMap<>();
     public static final Map<AnimalType, Integer> MAX_POPULATION_ANIMAL_IN_THE_CELL = new HashMap<>();
     public static final Map<AnimalType, Integer> MOVEMENT_SPEED_ANIMALS = new HashMap<>();
     public static final Map<AnimalType, Double> AMOUNT_OF_FOOD_NEEDED_FOR_FULL_SATURATION = new HashMap<>();
     public static final Map<AnimalType, Integer> MAX_AGE_ANIMALS = new HashMap<>();
     public static final int START_HEALTH = 100;
-    public static final int SATIETY = 70;
-    public static final int REPRODUCTION_COOLDOWN = 0;
+    public static final int START_REPRODUCTION_COOLDOWN = 0;
     public static final int AGE = 0;
     public static final boolean IS_ALIVE = true;
 
 // 4. ХАРАКТЕРИСТИКИ РАСТЕНИЙ
-    public static final int WEIGHT_OF_PLANT = 1;
+    public static final double WEIGHT_OF_PLANT_IN_KG = 1;
     public static final int MAX_NUMBER_OF_PLANTS_IN_THE_CELL = 200;
-
-// 5. МИНИМУМ ТРАВОЯДНЫХ, МИНИМУМ ХИЩНИКОВ
-    public static final int MIN_PREDATORS_TYPE = 5;
-    public static final int MIN_HERBIVORE_TYPE = 10;
+    public static final double PLANT_GROWTH_RATE = 0.1;
+    public static final double MAX_WEIGHT_OF_PLANT_IN_THE_CELL_IN_KG = (WEIGHT_OF_PLANT_IN_KG * MAX_NUMBER_OF_PLANTS_IN_THE_CELL);
 
     static{
         for(AnimalType type : AnimalType.values()){
-            WEIGHT_OF_ANIMAL.put(type, type.getWeight());
+            WEIGHT_OF_ANIMAL_IN_KG.put(type, type.getWeight());
         }
 
         for(AnimalType type : AnimalType.values()){
@@ -76,7 +72,7 @@ public class Config {
         PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.MOUSE, 80);
         PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.GOAT, 60);
         PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.SHEEP, 70);
-        PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.HOG, 15);
+        PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.BOAR, 15);
         PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.BUFFALO, 10);
         PROBABILITY_OF_EATING_BY_WOLF.put(AnimalType.DUCK, 40);
         PROBABILITY_OF_EATING_BY_BOA.put(AnimalType.FOX, 15);
@@ -94,7 +90,7 @@ public class Config {
         PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.MOUSE, 90);
         PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.GOAT, 70);
         PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.SHEEP, 70);
-        PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.HOG, 50);
+        PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.BOAR, 50);
         PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.BUFFALO, 20);
         PROBABILITY_OF_EATING_BY_BEAR.put(AnimalType.DUCK, 20);
         PROBABILITY_OF_EATING_BY_EAGLE.put(AnimalType.FOX, 10);
@@ -102,8 +98,8 @@ public class Config {
         PROBABILITY_OF_EATING_BY_EAGLE.put(AnimalType.MOUSE, 90);
         PROBABILITY_OF_EATING_BY_EAGLE.put(AnimalType.DUCK, 80);
         PROBABILITY_OF_EATING_BY_MOUSE.put(AnimalType.CATERPILLAR, 90);
-        PROBABILITY_OF_EATING_BY_HOG.put(AnimalType.MOUSE, 50);
-        PROBABILITY_OF_EATING_BY_HOG.put(AnimalType.CATERPILLAR, 90);
+        PROBABILITY_OF_EATING_BY_BOAR.put(AnimalType.MOUSE, 50);
+        PROBABILITY_OF_EATING_BY_BOAR.put(AnimalType.CATERPILLAR, 90);
         PROBABILITY_OF_EATING_BY_DUCK.put(AnimalType.CATERPILLAR, 90);
     }
 }

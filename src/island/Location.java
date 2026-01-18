@@ -1,33 +1,34 @@
 package island;
 
 import config.Config;
-import entitys.Animal;
-import entitys.Plant;
-import enums.AnimalType;
+import entities.Animal;
+import entities.Plant;
+import entities.enums.AnimalType;
 
-import java.util.ArrayList;
-import java.util.HashMap;
-import java.util.List;
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ConcurrentHashMap;
+import java.util.concurrent.CopyOnWriteArrayList;
+import java.util.concurrent.atomic.AtomicBoolean;
 
 public class Location {
-    private final int X;
-    private final int Y;
-    private Map<AnimalType, List<Animal>> animals = new HashMap<>();
-    private List<Plant> plants = new ArrayList<>();
+    private final int coordinateX;
+    private final int coordinateY;
+    private Map<AnimalType, List<Animal>> animals;
+    private List<Plant> plants;
 
-
-    public Location(int x, int y){
-        this.X = x;
-        this.Y = y;
+    public Location(int coordinateX, int coordinateY){
+        this.coordinateX = coordinateX;
+        this.coordinateY = coordinateY;
+        animals = new ConcurrentHashMap<>();
+        plants = new CopyOnWriteArrayList<>();
     }
 
-    public int getX() {
-        return X;
+    public int getCoordinateX() {
+        return coordinateX;
     }
 
-    public int getY() {
-        return Y;
+    public int getCoordinateY() {
+        return coordinateY;
     }
 
     public Map<AnimalType, List<Animal>> getAnimals() {
@@ -38,18 +39,61 @@ public class Location {
         return plants;
     }
 
-    private void growthOfPlants(){
-        if(plants.size() != Config.MAX_NUMBER_OF_PLANTS_IN_THE_CELL){
-            plants.add(new Plant(this));
+    public void growthOfPlants() {
+        double maxPlantMass = Config.MAX_WEIGHT_OF_PLANT_IN_THE_CELL_IN_KG;
+        double growthRate = Config.PLANT_GROWTH_RATE;
+
+        // 1. Растут существующие растения
+        for (Plant plant : plants) {
+            double currentWeight = plant.getWeight();
+            double growth = currentWeight * growthRate;
+
+            // Проверяем, не превысим ли общую массу
+            double totalMass = getTotalPlantMass();
+            if (totalMass + growth <= maxPlantMass) {
+                plant.incrementWeight(growth);
+            }
         }
+
+        // 2. Добавляем новые растения, если есть место
+        double totalMass = getTotalPlantMass();
+        double availableMass = maxPlantMass - totalMass;
+
+        if (availableMass > Config.WEIGHT_OF_PLANT_IN_KG) {
+            Plant newPlant = new Plant(this);
+            plants.add(newPlant);
+        }
+
+        // 3. Удаляем "мёртвые" растения
+        plants.removeIf(plant -> plant.getWeight() <= 0.001);
     }
 
-    private void addAnimal(Animal animal){
-        List<Animal> tempList = animals.get(animal.getType());
+    private double getTotalPlantMass() {
+        return plants.stream().mapToDouble(Plant::getWeight).sum();
+    }
+    public boolean tryAddAnimal(Animal animal) {
+        AnimalType type = animal.getType();
+        int capacity = Config.MAX_POPULATION_ANIMAL_IN_THE_CELL.get(type);
+        return animals.compute(type, (key, list) -> {
+            if (list == null) {
+                list = new CopyOnWriteArrayList<>();
+            }
 
-        if(tempList.size() < Config.MAX_POPULATION_ANIMAL_IN_THE_CELL.get(animal.getType())){
-            tempList.add(animal);
-        }
-        animals.put(animal.getType(), tempList);
+            if (list.size() < capacity) {
+                list.add(animal);
+            }
+            return list;
+        }).contains(animal); // Проверяем, добавился ли
+    }
+
+    public boolean tryRemoveAnimal(Animal animal) {
+        AtomicBoolean removed = new AtomicBoolean(false);
+
+        animals.computeIfPresent(animal.getType(), (type, list) -> {
+            removed.set(list.remove(animal));
+            return list.isEmpty() ? null : list; // Удаляем из мапы, если список пуст
+        });
+
+        return removed.get();
     }
 }
