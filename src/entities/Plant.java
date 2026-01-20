@@ -26,4 +26,10 @@ public class Plant implements Eatable {
     public void decrementWeight(double amount){
         this.weight = Math.max(0, weight - amount);
     }
+
+    public double consume(double desiredAmount) {
+        double amountToEat = Math.min(desiredAmount, this.weight);
+        this.weight -= amountToEat;
+        return amountToEat;
+    }
 }

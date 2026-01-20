@@ -2,14 +2,15 @@ package entities.animals;
 
 import config.Config;
 import entities.Animal;
-import entities.Eatable;
 import entities.Herbivore;
 import entities.Plant;
 import entities.enums.AnimalType;
 import entities.enums.Gender;
 import island.Location;
+import simulation.StepContext;
 
-import java.util.Map;
+import java.util.*;
+import java.util.concurrent.ThreadLocalRandom;
 
 public class Boar extends Herbivore {
     public final Map<AnimalType, Integer> probabilityOfEating;
@@ -19,28 +20,60 @@ public class Boar extends Herbivore {
         probabilityOfEating = Config.PROBABILITY_OF_EATING.get(this.getType());
     }
     @Override
-    public void eat(Eatable food){
-        if(food instanceof Plant){
-            Plant meal = (Plant) food;
-            double desiredAmount = this.getType().getFoodRequired();
-            double availableAmount = ((Plant) food).getWeight();
-            double actualAmount = Math.min(desiredAmount, availableAmount);
-            this.gainWeight(actualAmount);
-            ((Plant) food).decrementWeight(actualAmount);
-        } else if(food instanceof Animal) {
-            Animal prey = (Animal) food;
+    public void eat(StepContext context){
+        Location location = this.getLocation();
+        if (location == null) return;
+        boolean hasEatenPlant = tryEatPlant(location);
+        if (!hasEatenPlant) {
+            tryEatAnimal(location, context);
+        }
 
-            if (prey.getType() == AnimalType.MOUSE || prey.getType() == AnimalType.CATERPILLAR) {
-                Integer probability = probabilityOfEating.get(prey.getType());
+        if (!hasEatenPlant) {
+            this.loseWeight(Config.BASE_HUNGER_LOSS, context);
+        }
+    }
 
-                if (probability != null && (Math.random() * 100) <= probability) {
-                    this.gainWeight(prey.getCurrentWeight());
-                    prey.die();
-                    Location location = this.getLocation();
-                    if (location != null) {
-                        location.tryRemoveAnimal(prey);
-                    }
-                }
+    private boolean tryEatPlant(Location location) {
+        Optional<Plant> plantOpt = location.findPlantForEating();
+
+        if (plantOpt.isPresent()) {
+            Plant plant = plantOpt.get();
+            double desired = this.getType().getFoodRequired();
+            double available = plant.getWeight();
+            double eaten = Math.min(desired, available);
+
+            this.gainWeight(eaten);
+            plant.decrementWeight(eaten);
+
+            if (plant.getWeight() <= 0) {
+                location.removePlant(plant);
+            }
+
+            return true;
+        }
+        return false;
+    }
+
+    private void tryEatAnimal(Location location, StepContext context) {
+        Set<AnimalType> preyTypes = new HashSet<>();
+        if(probabilityOfEating.containsKey(AnimalType.MOUSE)){
+            preyTypes.add(AnimalType.MOUSE);
+        }
+
+        if(probabilityOfEating.containsKey(AnimalType.CATERPILLAR)){
+            preyTypes.add(AnimalType.CATERPILLAR);
+        }
+
+        List<Animal> potentialPrey = location.findAnimalsByTypes(preyTypes);
+        if (potentialPrey.isEmpty()) return;
+
+        for (Animal prey : potentialPrey) {
+            Integer probability = probabilityOfEating.get(prey.getType());
+            if (probability == null) continue;
+
+            if (ThreadLocalRandom.current().nextInt(100) < probability) {
+                this.gainWeight(prey.getCurrentWeight());
+                context.markAnimalForRemoval(prey);
             }
         }
     }

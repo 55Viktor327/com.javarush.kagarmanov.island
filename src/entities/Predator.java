@@ -7,11 +7,9 @@ import entities.enums.Gender;
 import factory.AnimalFactory;
 import island.Island;
 import island.Location;
+import simulation.StepContext;
 
-import java.util.ArrayList;
-import java.util.List;
-import java.util.Map;
-import java.util.Optional;
+import java.util.*;
 import java.util.concurrent.ThreadLocalRandom;
 
 public class Predator extends Animal{
@@ -22,64 +20,75 @@ public class Predator extends Animal{
     }
 
     @Override
-    protected void eat(Eatable food) {
-        if(food instanceof Plant){
+    public void eat(StepContext context) {
+        if (context == null || location == null) return;
+
+        Map<AnimalType, Integer> preyMap = probabilityOfEating.get(this.getType());
+        if (preyMap == null || preyMap.isEmpty()) {
+            this.loseWeight(Config.BASE_HUNGER_LOSS, context);
             return;
         }
 
-        Animal prey = (Animal)food;
-        double probability = probabilityOfEating
-                .get(this.getType())
-                .get(prey.getType());
-        if((Math.random()*100.0) <= probability){
-            double nutrition = prey.getCurrentWeight();
-            this.gainWeight(nutrition);
-            prey.die();
+        Set<AnimalType> preyTypes = preyMap.keySet();
+        List<Animal> potentialPrey = location.findAnimalsByTypes(preyTypes);
 
-            Location location = this.getLocation();
-            if (location != null) {
-                location.tryRemoveAnimal(prey);
-            }
+        if (potentialPrey.isEmpty()) {
+            this.loseWeight(Config.BASE_HUNGER_LOSS, context);
+            return;
+        }
 
-        }else {
-            this.loseWeight((getCurrentWeight()*0.1));
-            System.out.println("Жертва убежала");
+        boolean hasEaten = tryEatRandomPrey(potentialPrey, preyMap, context);
+
+        if (!hasEaten) {
+            this.loseWeight(Config.BASE_HUNGER_LOSS, context);
         }
     }
 
+    private boolean tryEatRandomPrey(List<Animal> potentialPrey, Map<AnimalType, Integer> preyMap, StepContext context) {
+
+        Collections.shuffle(potentialPrey);
+
+        for (Animal prey : potentialPrey) {
+            Integer probability = preyMap.get(prey.getType());
+            if (probability == null) continue;
+
+            if (ThreadLocalRandom.current().nextInt(100) < probability) {
+                double nutrition = prey.getCurrentWeight();
+                this.gainWeight(nutrition);
+                context.markAnimalForRemoval(prey);
+                return true;
+            }
+        }
+
+        return false;
+    }
+
     @Override
-    protected void move(){
+    public void move(StepContext context){
         int maxSteps = this.getType().getMaxSpeed();
         for (int step = 0; step < maxSteps; step++) {
-            boolean moved = makeOneStep();
+            boolean moved = makeOneStep(context);
             if(!moved){
                 break;
             }
         }
     }
 
-    private boolean makeOneStep() {
-        // 1. Получаем текущую локацию
+    private boolean makeOneStep(StepContext context) {
+        if(context == null) return false;
+
         Location currentLocation = this.getLocation();
         if (currentLocation == null) return false;
-
-        // 2. Определяем возможные направления
         List<Direction> possibleDirections = getPossibleDirections(currentLocation);
         if (possibleDirections.isEmpty()) return false;
-
-        // 3. Выбираем направление (случайное или по логике)
         Direction direction = chooseDirection(possibleDirections);
-
-        // 4. Вычисляем новую позицию
         int newX = currentLocation.getCoordinateX() + direction.getDx();
         int newY = currentLocation.getCoordinateY() + direction.getDy();
 
-        // 5. Получаем остров и целевую локацию
         Island island = Island.getIsland();
         Location targetLocation = island.getLocation(newX, newY);
-
-        // 6. Пытаемся переместиться
-        if (targetLocation != null && tryMoveToLocation(targetLocation)) {
+        if (targetLocation != null) {
+            context.addMovementIntent(this, targetLocation);
             return true;
         }
 
@@ -91,7 +100,6 @@ public class Predator extends Animal{
         for (Direction dir : Direction.values()) {
             int newX = currentLocation.getCoordinateX() + dir.getDx();
             int newY = currentLocation.getCoordinateY() + dir.getDy();
-
             if (isValidCoordinate(newX, newY)) {
                 possible.add(dir);
             }
@@ -110,33 +118,22 @@ public class Predator extends Animal{
             return possibleDirections.get(ThreadLocalRandom.current().nextInt(possibleDirections.size()));
     }
 
-    private boolean tryMoveToLocation(Location targetLocation) {
-        // 1. Пытаемся добавить животное в новую локацию
-        boolean added = targetLocation.tryAddAnimal(this);
-
-        if (added) {
-            // 2. Если успешно - удаляем из старой локации
-            Location currentLocation = this.getLocation();
-            currentLocation.tryRemoveAnimal(this);
-
-            // 3. Обновляем ссылку у животного
-            this.setLocation(targetLocation);
-            return true;
-        }
-        return false; // Не смогли добавить (нет места)
-    }
-
     @Override
-    protected Optional<Animal> reproduce(Animal partner) {
-        if(!canReproduce(partner)) {
-            return Optional.empty();
-        }
+    public void reproduce(StepContext context) {
+        if (context == null) return;
 
-        Optional<Animal> cub = (this.getGender() == Gender.FEMALE) ? createCub(this) : createCub(partner);
-        cub.ifPresent(c -> {
-            this.setReproductionCooldown(this.getType().getReproductionCooldown());
-            partner.setReproductionCooldown(partner.getType().getReproductionCooldown());});
-        return cub;
+        Location location = this.getLocation();
+        Optional<Animal> partnerOpt = location.findPartnerFor(this);
+        partnerOpt.ifPresent(partner -> {
+            Animal mother = (this.getGender() == Gender.FEMALE) ? this : partner;
+            Optional<Animal> cubOpt = createCub(mother);
+
+            cubOpt.ifPresent(cub -> {
+                context.addNewborn(cub);
+                this.setReproductionCooldown(this.getType().getReproductionCooldown());
+                partner.setReproductionCooldown(partner.getType().getReproductionCooldown());
+            });
+        });
     }
 
     private Optional<Animal> createCub(Animal mother){
@@ -144,17 +141,5 @@ public class Predator extends Animal{
             return Optional.of(AnimalFactory.createAnimal(mother.getType(), mother.getLocation()));
         }
         return Optional.empty();
-    }
-
-    private boolean canReproduce(Animal partner){
-        if(this.getType() == partner.getType()
-            && this.getGender() != partner.getGender()
-            && this.getHealth() >= 80
-            && partner.getHealth() >= 80
-            && this.getReproductionCooldown() == 0
-            && partner.getReproductionCooldown() == 0){
-            return true;
-        }
-        return false;
     }
 }

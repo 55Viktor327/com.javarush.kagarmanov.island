@@ -14,9 +14,9 @@ import java.util.concurrent.atomic.AtomicInteger;
 
 public class Island {
     private static Island island = getIsland();
-    private final Location[][] cells; // для быстрого доступа по координатам
-    private final List<Location> allLocations; // для удобной итерации
-    private final Map<AnimalType, AtomicInteger> currentPopulation; // потокобезопасные счётчики
+    private final Location[][] cells;
+    private final List<Location> allLocations;
+    private final Map<AnimalType, AtomicInteger> currentPopulation;
 
     private Island(){
         cells = new Location[Config.WIDTH_ISLAND][Config.LENGTH_ISLAND];

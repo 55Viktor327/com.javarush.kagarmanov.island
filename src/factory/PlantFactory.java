@@ -22,4 +22,3 @@ public class PlantFactory {
         return new Plant(loc);
     }
 }
-

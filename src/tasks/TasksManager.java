@@ -1,35 +1,36 @@
 package tasks;
 
+import factory.AnimalFactory;
+import factory.PlantFactory;
 import island.Island;
+import simulation.SimulationEngine;
 
-import java.util.HashMap;
-import java.util.Map;
+import java.util.concurrent.ExecutorService;
 import java.util.concurrent.Executors;
-import java.util.concurrent.ScheduledExecutorService;
-import java.util.concurrent.ScheduledFuture;
-import java.util.concurrent.TimeUnit;
+import java.util.concurrent.Future;
 
 public class TasksManager {
-    private final ScheduledExecutorService scheduler;
-    private final Map<String, ScheduledFuture<?>> tasks;
+    private ExecutorService engineExecutor;
+    private SimulationEngine simulationEngine;
+    private Future<?> simulationFuture;
 
-    public TasksManager(){
-        this.scheduler = Executors.newScheduledThreadPool(10);
-        this.tasks = new HashMap<>();
+    public TasksManager() {
+        this.engineExecutor = Executors.newSingleThreadExecutor();
     }
 
-    public void startSimulation(){
+    public void startSimulation() {
+        System.out.println("Запуск симуляции...");
+
         Island island = Island.getIsland();
-        scheduleTask("Статистика острова", new StatisticsOfIsland(island), 0, 10, TimeUnit.SECONDS);
-    }
+        AnimalFactory animalFactory = new AnimalFactory();
+        PlantFactory plantFactory = new PlantFactory();
 
-    private void scheduleTask(String name, Runnable task, int delay, int period, TimeUnit seconds) {
-        ScheduledFuture<?> future = scheduler.scheduleAtFixedRate(task, delay, period, TimeUnit.SECONDS);
-        tasks.put(name, future);
-    }
+        island.initialize(animalFactory, plantFactory);
 
-    public void stopSimulation() {
-        tasks.values().forEach(future -> future.cancel(true));
-        scheduler.shutdown();
+        simulationEngine = new SimulationEngine();
+
+        simulationFuture = engineExecutor.submit(simulationEngine);
+
+        System.out.println("Симуляция успешно запущена");
     }
 }

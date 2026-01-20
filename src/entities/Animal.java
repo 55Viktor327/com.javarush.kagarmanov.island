@@ -4,13 +4,13 @@ import config.Config;
 import entities.enums.AnimalType;
 import entities.enums.Gender;
 import island.Location;
-
-import java.util.*;
+import simulation.ContextAware;
+import simulation.StepContext;
 
 public abstract class Animal implements Eatable{
     private AnimalType type;
     private Gender gender;
-    private Location location;
+    protected Location location;
     private int age;
     private int health;
     private boolean isAlive;
@@ -26,24 +26,6 @@ public abstract class Animal implements Eatable{
         this.isAlive = Config.IS_ALIVE;
         this.reproductionCooldown = Config.START_REPRODUCTION_COOLDOWN;
         this.currentWeight = Config.WEIGHT_OF_ANIMAL_IN_KG.get(this.getType());
-    }
-
-    protected abstract void eat(Eatable food);
-
-    protected abstract void move();
-
-    protected abstract Optional<Animal> reproduce(Animal partner);
-
-    public void die(){
-        isAlive = false;
-        health = 0;
-    }
-
-    public void age(){
-        age++;
-        if(age >= type.getMaxAge()){
-            die();
-        }
     }
 
     public AnimalType getType() {
@@ -82,22 +64,55 @@ public abstract class Animal implements Eatable{
         this.reproductionCooldown = reproductionCooldown;
     }
 
-    public void gainWeight(double amount) {
-        currentWeight = Math.min(currentWeight + amount, Config.WEIGHT_OF_ANIMAL_IN_KG.get(this.getType()));
-    }
-
-    public void loseWeight(double amount) {
-        currentWeight -= amount;
-        if (currentWeight <= Config.WEIGHT_OF_ANIMAL_IN_KG.get(this.getType()) * 0.3) { // Умирает при 30% от максимума
-            die();
-        }
-    }
-
     public double getCurrentWeight() {
         return currentWeight;
     }
 
-    public double getNutritionalValue() {
-        return currentWeight;
+    public abstract void eat(StepContext context);
+
+    public abstract void move(StepContext context);
+
+    public abstract void reproduce(StepContext context);
+
+    public void die(){
+        isAlive = false;
+        health = 0;
+    }
+
+    public void age(StepContext context){
+        this.age++;
+        this.decreaseReproductionCooldown();
+        if (this.age >= this.getType().getMaxAge()) {
+            if(context != null){
+                context.markAnimalForRemoval(this);
+            }
+        }
+    }
+
+    public void gainWeight(double amount) {
+        currentWeight = Math.min(currentWeight + amount, Config.WEIGHT_OF_ANIMAL_IN_KG.get(this.getType()));
+    }
+
+    public void loseWeight(double amount, StepContext context) {
+        currentWeight -= amount;
+        if (currentWeight <= Config.WEIGHT_OF_ANIMAL_IN_KG.get(this.getType()) * 0.3) { // Умирает при 30% от максимума
+            if(context != null){
+                context.markAnimalForRemoval(this);
+            }
+        }
+    }
+
+
+    public void decreaseReproductionCooldown() {
+        if (reproductionCooldown > 0) {
+            reproductionCooldown--;
+        }
+    }
+
+    public boolean canReproduce(){
+        return currentWeight >= (this.getCurrentWeight()*0.7) &&
+                this.getReproductionCooldown() ==0 &&
+                this.getAge() >= 1 &&
+                this.getHealth() >= (health * 0.8);
     }
 }

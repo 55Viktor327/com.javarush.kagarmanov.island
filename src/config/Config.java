@@ -38,6 +38,7 @@ public class Config {
     public static final int START_REPRODUCTION_COOLDOWN = 0;
     public static final int AGE = 0;
     public static final boolean IS_ALIVE = true;
+    public static final double BASE_HUNGER_LOSS = 0.4;
 
 // 4. ХАРАКТЕРИСТИКИ РАСТЕНИЙ
     public static final double WEIGHT_OF_PLANT_IN_KG = 1;
