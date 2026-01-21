@@ -43,7 +43,7 @@ public class Config {
 // 4. ХАРАКТЕРИСТИКИ РАСТЕНИЙ
     public static final double WEIGHT_OF_PLANT_IN_KG = 1;
     public static final int MAX_NUMBER_OF_PLANTS_IN_THE_CELL = 200;
-    public static final double PLANT_GROWTH_RATE = 0.1;
+    public static final double PLANT_GROWTH_RATE = 0.5;
     public static final double MAX_WEIGHT_OF_PLANT_IN_THE_CELL_IN_KG = (WEIGHT_OF_PLANT_IN_KG * MAX_NUMBER_OF_PLANTS_IN_THE_CELL);
 
     static{

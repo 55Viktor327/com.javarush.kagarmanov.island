@@ -2,7 +2,6 @@ package entities.animals;
 
 import config.Config;
 import entities.Animal;
-import entities.Eatable;
 import entities.Herbivore;
 import entities.Plant;
 import entities.enums.AnimalType;

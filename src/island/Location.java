@@ -19,7 +19,6 @@ public class Location {
     private final ConcurrentMap<AnimalType, CopyOnWriteArrayList<Animal>> animals;
     private final CopyOnWriteArrayList<Plant> plants;
     private final AtomicInteger animalCount = new AtomicInteger(0);
-    private final Object lock = new Object();
 
     public Location(int coordinateX, int coordinateY) {
         this.coordinateX = coordinateX;
@@ -36,16 +35,12 @@ public class Location {
         return new ArrayList<>(plants);
     }
 
-    public ConcurrentMap<AnimalType, CopyOnWriteArrayList<Animal>> getAnimalsMap() {
-        return animals;
-    }
-
     public boolean tryAddAnimal(Animal animal) {
         AnimalType type = animal.getType();
         int capacity = Config.MAX_POPULATION_ANIMAL_IN_THE_CELL.get(type);
         boolean[] added = new boolean[1];
 
-        animals.compute(type, (key, list) -> {
+        return animals.compute(type, (key, list) -> {
             if (list == null) {
                 list = new CopyOnWriteArrayList<>();
             }
@@ -54,11 +49,10 @@ public class Location {
                 list.add(animal);
                 added[0] = true;
                 animalCount.incrementAndGet();
+                return list;
             }
             return list;
-        });
-
-        return added[0];
+        }).contains(animal);
     }
 
     public boolean tryRemoveAnimal(Animal animal) {
@@ -110,11 +104,6 @@ public class Location {
                 .collect(Collectors.toUnmodifiableList());
     }
 
-    public List<Animal> getAnimalsByTypeSafe(AnimalType type) {
-        CopyOnWriteArrayList<Animal> list = animals.get(type);
-        return list != null ? new ArrayList<>(list) : new ArrayList<>();
-    }
-
     public List<Animal> findAnimalsByTypes(Set<AnimalType> types) {
         List<Animal> result = new ArrayList<>();
         for (AnimalType type : types) {
@@ -155,30 +144,32 @@ public class Location {
     }
 
     public void growthOfPlants() {
-        double maxPlantMass = Config.MAX_WEIGHT_OF_PLANT_IN_THE_CELL_IN_KG;
-        double growthRate = Config.PLANT_GROWTH_RATE;
-        double currentTotalMass = getTotalPlantMass();
-        double availableGrowth = maxPlantMass - currentTotalMass;
-        if (availableGrowth <= 0) {
-            return;
-        }
+        synchronized (plants) {
+            int beforeRemoval = plants.size();
+            plants.removeIf(plant -> plant.getWeight() <= 0.001);
+            int afterRemoval = plants.size();
 
-        if (!plants.isEmpty()) {
-            double growthPerPlant = availableGrowth * growthRate / plants.size();
+            double growthRate = Config.PLANT_GROWTH_RATE;
             for (Plant plant : plants) {
-                plant.incrementWeight(growthPerPlant);
+                double currentWeight = plant.getWeight();
+                double growthAmount = currentWeight * growthRate;
+                plant.incrementWeight(growthAmount);
+            }
+
+            if (plants.size() < Config.MAX_NUMBER_OF_PLANTS_IN_THE_CELL) {
+                double currentTotalMass = getTotalPlantMass();
+                double availableCapacity = Config.MAX_WEIGHT_OF_PLANT_IN_THE_CELL_IN_KG - currentTotalMass;
+
+                double reproductionProbability = 0.3 * (1.0 - (double) plants.size() / Config.MAX_NUMBER_OF_PLANTS_IN_THE_CELL);
+
+                if (availableCapacity >= Config.WEIGHT_OF_PLANT_IN_KG &&
+                        Math.random() < reproductionProbability) {
+
+                    Plant newPlant = new Plant(this);
+                    plants.add(newPlant);
+                }
             }
         }
-
-        currentTotalMass = getTotalPlantMass();
-        availableGrowth = maxPlantMass - currentTotalMass;
-
-        if (availableGrowth > Config.WEIGHT_OF_PLANT_IN_KG &&
-                plants.size() < Config.MAX_NUMBER_OF_PLANTS_IN_THE_CELL) {
-            plants.add(new Plant(this));
-        }
-
-        plants.removeIf(plant -> plant.getWeight() <= 0.001);
     }
 
     private double getTotalPlantMass() {

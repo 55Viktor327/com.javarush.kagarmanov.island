@@ -18,9 +18,4 @@ public enum Direction {
 
     public int getDx() { return dx; }
     public int getDy() { return dy; }
-
-    public static Direction random() {
-        Direction[] values = values();
-        return values[ThreadLocalRandom.current().nextInt(values.length)];
-    }
 }

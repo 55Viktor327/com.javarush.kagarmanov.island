@@ -27,6 +27,7 @@ public class TasksManager {
 
         island.initialize(animalFactory, plantFactory);
 
+
         simulationEngine = new SimulationEngine();
 
         simulationFuture = engineExecutor.submit(simulationEngine);

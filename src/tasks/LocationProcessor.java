@@ -25,7 +25,6 @@ public class LocationProcessor implements Runnable {
             processPlantGrowth();
             processMovement();
             processAging();
-
         } catch (Exception e) {
             System.err.println("Ошибка в локации " + location + ": " + e.getMessage());
         } finally {

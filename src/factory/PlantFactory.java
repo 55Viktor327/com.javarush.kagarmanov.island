@@ -10,15 +10,11 @@ public class PlantFactory {
 
     }
 
-    public static PlantFactory getInstance(){
-        return INSTANCE;
-    }
-
     public static Plant createPlant(Location loc){
-        return INSTANCE.createPlantInstatnce(loc);
+        return INSTANCE.createPlantInstance(loc);
     }
 
-    private Plant createPlantInstatnce(Location loc){
+    private Plant createPlantInstance(Location loc){
         return new Plant(loc);
     }
 }

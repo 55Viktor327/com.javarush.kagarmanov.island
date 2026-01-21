@@ -4,7 +4,6 @@ import config.Config;
 import entities.enums.AnimalType;
 import entities.enums.Gender;
 import island.Location;
-import simulation.ContextAware;
 import simulation.StepContext;
 
 public abstract class Animal implements Eatable{
@@ -13,14 +12,16 @@ public abstract class Animal implements Eatable{
     protected Location location;
     private int age;
     private int health;
-    private boolean isAlive;
+    private volatile boolean isAlive;
     private int reproductionCooldown;
     private double currentWeight;
+    private volatile boolean markedForRemoval;
 
     protected Animal(AnimalType type, Gender gender, Location location){
         this.type = type;
         this.gender = gender;
         this.location = location;
+        this.markedForRemoval = false;
         this.age = Config.AGE;
         this.health = Config.START_HEALTH;
         this.isAlive = Config.IS_ALIVE;
@@ -68,6 +69,14 @@ public abstract class Animal implements Eatable{
         return currentWeight;
     }
 
+    public boolean isMarkedForRemoval() {
+        return markedForRemoval;
+    }
+
+    public void setMarkedForRemoval(boolean markedForRemoval) {
+        this.markedForRemoval = markedForRemoval;
+    }
+
     public abstract void eat(StepContext context);
 
     public abstract void move(StepContext context);
@@ -77,6 +86,7 @@ public abstract class Animal implements Eatable{
     public void die(){
         isAlive = false;
         health = 0;
+        markedForRemoval = true;
     }
 
     public void age(StepContext context){

@@ -86,19 +86,13 @@ public class SimulationEngine implements Runnable {
             totalPlants += location.getPlants().size();
         }
 
-        System.out.println("Растений на острове: " + totalPlants);
-        System.out.println();
-
         int totalAnimals = island.getCurrentPopulationOfAnimals().values().stream()
                 .mapToInt(Integer::intValue)
                 .sum();
         System.out.println("  Всего животных: " + totalAnimals);
 
-
-    }
-
-    public void stop() {
-        running = false;
+        System.out.println("Растений на острове: " + totalPlants);
+        System.out.println();
     }
 
     private void shutdown() {
@@ -111,9 +105,5 @@ public class SimulationEngine implements Runnable {
             locationExecutor.shutdownNow();
             Thread.currentThread().interrupt();
         }
-    }
-
-    public int getCurrentCycle() {
-        return currentCycle.get();
     }
 }

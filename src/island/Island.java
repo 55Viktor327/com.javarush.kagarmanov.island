@@ -71,26 +71,6 @@ public class Island {
         return allLocations;
     }
 
-    public List<Location> getAdjacentLocations(Location location) {
-        List<Location> adjacent = new ArrayList<>();
-        int x = location.getCoordinateX();
-        int y = location.getCoordinateY();
-
-        // Проверяем все 4 направления
-        checkAndAddLocation(x, y - 1, adjacent); // UP
-        checkAndAddLocation(x, y + 1, adjacent); // DOWN
-        checkAndAddLocation(x - 1, y, adjacent); // LEFT
-        checkAndAddLocation(x + 1, y, adjacent); // RIGHT
-
-        return adjacent;
-    }
-
-    private void checkAndAddLocation(int x, int y, List<Location> list) {
-        if (isValidCoordinate(x, y)) {
-            list.add(cells[x][y]);
-        }
-    }
-
     public void incrementPopulation(AnimalType type) {
         currentPopulation.get(type).incrementAndGet();
     }
@@ -117,7 +97,7 @@ public class Island {
 
     private void initializePlants(Location location, PlantFactory plantFactory) {
         int maxPlants = Config.MAX_NUMBER_OF_PLANTS_IN_THE_CELL;
-        int plantCount = ThreadLocalRandom.current().nextInt(0, (int)(maxPlants * 0.4));
+        int plantCount = ThreadLocalRandom.current().nextInt(0, (int)(maxPlants * 0.1));
 
         for (int i = 0; i < plantCount; i++) {
             Plant plant = plantFactory.createPlant(location);

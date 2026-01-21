@@ -52,11 +52,17 @@ public class Predator extends Animal{
             Integer probability = preyMap.get(prey.getType());
             if (probability == null) continue;
 
-            if (ThreadLocalRandom.current().nextInt(100) < probability) {
-                double nutrition = prey.getCurrentWeight();
-                this.gainWeight(nutrition);
-                context.markAnimalForRemoval(prey);
-                return true;
+            synchronized (prey) {
+                if (!prey.isAlive() || prey.isMarkedForRemoval()) {
+                    continue;
+                }
+
+                if (ThreadLocalRandom.current().nextInt(100) < probability) {
+                    double nutrition = prey.getCurrentWeight();
+                    this.gainWeight(nutrition);
+                    context.markAnimalForRemoval(prey);
+                    return true;
+                }
             }
         }
 

@@ -1,6 +1,7 @@
 package simulation;
 
 import entities.Animal;
+import island.Island;
 import island.Location;
 
 import java.util.*;
@@ -8,19 +9,29 @@ import java.util.concurrent.*;
 import java.util.concurrent.atomic.AtomicInteger;
 
 public class StepContext {
+    private final Island island;
     private final Queue<Runnable> highPriorityActions = new ConcurrentLinkedQueue<>();  // Удаления
     private final Queue<Runnable> mediumPriorityActions = new ConcurrentLinkedQueue<>(); // Перемещения
     private final Queue<Runnable> lowPriorityActions = new ConcurrentLinkedQueue<>();    // Добавления
+    private final Queue<Runnable> plantAdditions = new ConcurrentLinkedQueue<>();
+    private final Queue<Runnable> plantRemovals = new ConcurrentLinkedQueue<>();
     private final AtomicInteger pendingRemovals = new AtomicInteger(0);
     private final AtomicInteger pendingMovements = new AtomicInteger(0);
     private final AtomicInteger pendingBirths = new AtomicInteger(0);
+    private final AtomicInteger pendingPlantAdditions = new AtomicInteger(0);
+    private final AtomicInteger pendingPlantRemovals = new AtomicInteger(0);
     private final Object applyLock = new Object();
 
+    public StepContext() {
+        this.island = Island.getIsland();
+    }
+
     public void markAnimalForRemoval(Animal animal) {
-        if (animal == null || !animal.isAlive()) {
+        if (animal == null || !animal.isAlive() || animal.isMarkedForRemoval()) {
             return;
         }
 
+        animal.setMarkedForRemoval(true);
         pendingRemovals.incrementAndGet();
         highPriorityActions.offer(() -> {
             try {
@@ -28,7 +39,11 @@ public class StepContext {
                 if (location != null) {
                     location.tryRemoveAnimal(animal);
                 }
-                animal.die();
+
+                if (animal.isAlive()) {
+                    animal.die();
+                    island.decrementPopulation(animal.getType());
+                }
 
             } catch (Exception e) {
                 System.err.println("Ошибка при удалении животного " + animal + ": " + e.getMessage());
@@ -48,6 +63,7 @@ public class StepContext {
                 if (birthLocation != null) {
                     birthLocation.tryAddAnimal(cub);
                 }
+                island.incrementPopulation(cub.getType());
             } catch (Exception e) {
                 System.err.println("Ошибка при добавлении новорожденного " + cub + ": " + e.getMessage());
             }
@@ -71,7 +87,6 @@ public class StepContext {
             }
         });
     }
-
     public void applyChanges() {
         synchronized (applyLock) {
             int totalActions = pendingRemovals.get() + pendingMovements.get() + pendingBirths.get();
@@ -79,14 +94,9 @@ public class StepContext {
                 return;
             }
 
-            System.out.printf("=== ПРИМЕНЕНИЕ ИЗМЕНЕНИЙ (%d действий) ===%n", totalActions);
-            System.out.printf("  Удаления: %d, Перемещения: %d, Рождения: %d%n", pendingRemovals.get(), pendingMovements.get(), pendingBirths.get());
-            long startTime = System.currentTimeMillis();
             processActionQueue(highPriorityActions, "удаления");
             processActionQueue(mediumPriorityActions, "перемещения");
             processActionQueue(lowPriorityActions, "рождения");
-            long endTime = System.currentTimeMillis();
-            System.out.printf("Изменения применены за %d мс%n", (endTime - startTime));
             resetCounters();
         }
     }
@@ -116,15 +126,5 @@ public class StepContext {
         pendingRemovals.set(0);
         pendingMovements.set(0);
         pendingBirths.set(0);
-    }
-
-    public void clearAll() {
-        synchronized (applyLock) {
-            highPriorityActions.clear();
-            mediumPriorityActions.clear();
-            lowPriorityActions.clear();
-            resetCounters();
-            System.out.println("Все очереди StepContext очищены");
-        }
     }
 }

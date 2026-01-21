@@ -10,8 +10,4 @@ public enum Gender {
         Random random = new Random();
         return random.nextBoolean() ? MALE : FEMALE;
     }
-
-    public String getDisplayName(){
-        return this == MALE ? "Самец" : "Самка";
-    }
 }
